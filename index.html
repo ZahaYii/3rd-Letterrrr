@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>A Letter for You</title>
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,300;1,9..144,600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Caveat:wght@500;700&display=swap" rel="stylesheet" />
+
+<style>
+  :root {
+    --acc: #d9738a;  --acc2: #f0a35e;
+    --tx: #4a2f38;   --soft: #856a72;
+    --glass: rgba(255,250,242,.55);  --glass-b: rgba(255,255,255,.6);
+    --p1: #fffaf2;   --p2: #fbf1e2;  --pl: rgba(217,115,138,.14);
+    --shadow: 0 24px 70px rgba(40,30,60,.28);
+
+    --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+    --font-body:    "Newsreader", Georgia, "Times New Roman", serif;
+    --font-hand:    "Caveat", "Segoe Script", "Brush Script MT", cursive;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; width: 100%; overflow: hidden; touch-action: manipulation; }
+  body {
+    font-family: var(--font-body);
+    color: var(--tx);
+    background: #111;
+    -webkit-font-smoothing: antialiased;
+    transition: color .8s ease;
+  }
+  button { font-family: inherit; cursor: pointer; touch-action: manipulation; user-select: none; }
+
+  /* Background canvas layering */
+  #bg {
+    position: fixed; inset: 0; width: 100%; height: 100%;
+    z-index: 0; pointer-events: none; transition: opacity .45s ease;
+  }
+  #bgOld { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; opacity: 0; }
+  #veil {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(ellipse at 50% 45%, transparent 50%, var(--vig, rgba(0,0,0,.28)) 100%),
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    opacity: .5; mix-blend-mode: soft-light;
+  }
+
+  /* Theme navigation */
+  #themes {
+    position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+    z-index: 40; display: flex; gap: 4px; padding: 5px;
+    background: var(--glass); border: 1px solid var(--glass-b);
+    border-radius: 60px; box-shadow: 0 8px 28px rgba(0,0,0,.18);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    transition: background .8s ease, border-color .8s ease;
+  }
+  .tbtn {
+    display: flex; align-items: center; gap: 8px; min-height: 44px; min-width: 44px;
+    padding: 6px 14px 6px 6px; border: 0; border-radius: 40px;
+    background: transparent; color: var(--tx);
+    font-size: .95rem; transition: background .3s ease, color .8s ease;
+  }
+  .tbtn .sw {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,.7);
+    box-shadow: 0 2px 6px rgba(0,0,0,.25);
+    transition: transform .3s ease;
+  }
+  .tbtn:hover .sw { transform: scale(1.12) rotate(20deg); }
+  .tbtn[aria-pressed="true"] { background: linear-gradient(135deg, var(--acc), var(--acc2)); color: #fff; }
+  @media (max-width: 600px) {
+    .tbtn { padding: 5px; }
+    .tbtn span:last-child { display: none; }
+    .tbtn[aria-pressed="true"] span:last-child { display: inline; padding-right: 8px; }
+  }
+
+  /* Main Letter Screen (Active by default) */
+  #letter-screen {
+    position: fixed; inset: 0; z-index: 10;
+    display: flex; flex-direction: column; justify-content: flex-start; align-items: center;
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+    padding: 84px 20px 120px;
+  }
+
+  /* Letter Paper */
+  .paper {
+    position: relative; width: 100%; max-width: 700px; margin: 0 auto;
+    padding: clamp(34px, 7vw, 68px) clamp(24px, 7vw, 64px);
+    background:
+      repeating-linear-gradient(transparent 0, transparent 37px, var(--pl) 37px, var(--pl) 38px),
+      linear-gradient(180deg, var(--p1), var(--p2));
+    border-radius: 10px;
+    box-shadow: var(--shadow), 0 0 0 1px var(--glass-b);
+    transition: background .8s ease;
+  }
+  .paper::before {
+    content: "❀"; position: absolute; top: -22px; left: 50%; transform: translateX(-50%);
+    width: 46px; height: 46px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 1.3rem;
+    background: radial-gradient(circle at 35% 30%, var(--acc2), var(--acc));
+    box-shadow: 0 6px 16px rgba(0,0,0,.3), inset 0 -3px 6px rgba(0,0,0,.2);
+  }
+  .paper h2 {
+    text-align: center; font-family: var(--font-display);
+    font-style: italic; font-weight: 300;
+    font-size: clamp(2.1rem, 6.5vw, 3.2rem); letter-spacing: -.01em;
+    background: linear-gradient(120deg, var(--acc), var(--acc2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    margin: 10px 0 6px; padding-bottom: .1em;
+  }
+  .paper .divider {
+    display: flex; align-items: center; gap: 14px; justify-content: center;
+    color: var(--acc); margin-bottom: 34px; font-size: .9rem;
+  }
+  .paper .divider::before, .paper .divider::after {
+    content: ""; height: 1px; width: 72px;
+    background: linear-gradient(90deg, transparent, var(--acc));
+  }
+  .paper .divider::after { transform: scaleX(-1); }
+
+  .letter-body { font-size: clamp(1.2rem, 3.5vw, 1.4rem); line-height: 1.9; color: var(--tx); }
+  .letter-body p { margin-bottom: 1.2em; }
+
+  .placeholder {
+    border: 1.5px dashed var(--acc); background: rgba(255,255,255,.12);
+    border-radius: 10px; padding: 18px 20px; color: var(--soft); font-style: italic;
+  }
+
+  .signature {
+    font-family: var(--font-hand); font-size: clamp(2rem, 6vw, 2.6rem);
+    color: var(--acc); text-align: right; margin-top: 28px; transform: rotate(-3deg);
+  }
+  .signature small { display: block; font-size: 1.2rem; color: var(--soft); }
+
+  /* Music Player Component */
+  #music-wrap {
+    position: fixed; right: 16px; bottom: 16px; z-index: 50;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+    max-width: calc(100vw - 32px);
+  }
+  #music-player, #playlist {
+    background: var(--glass); border: 1px solid var(--glass-b);
+    box-shadow: 0 8px 26px rgba(0,0,0,.22);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    transition: background .8s ease, opacity .35s ease, transform .35s ease, visibility .35s;
+  }
+  #music-player {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 14px 7px 8px; border-radius: 50px; max-width: 100%;
+  }
+  #play-btn {
+    width: 46px; height: 46px; flex-shrink: 0; border-radius: 50%; border: 0;
+    color: #fff; font-size: 1rem; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--acc), var(--acc2));
+  }
+  .ctl {
+    width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%; border: 0;
+    background: transparent; color: var(--tx); font-size: .95rem; display: flex; align-items: center; justify-content: center;
+  }
+  #list-btn[aria-expanded="true"] { background: linear-gradient(135deg, var(--acc), var(--acc2)); color: #fff; }
+
+  .eq { display: flex; align-items: flex-end; gap: 3px; height: 18px; }
+  .eq i { width: 3px; height: 30%; border-radius: 2px; background: var(--acc); }
+  #music-wrap.playing .eq i { animation: eq .9s ease-in-out infinite alternate; }
+  #music-wrap.playing .eq i:nth-child(2) { animation-delay: .2s; }
+  #music-wrap.playing .eq i:nth-child(3) { animation-delay: .4s; }
+  #music-wrap.playing .eq i:nth-child(4) { animation-delay: .1s; }
+  @keyframes eq { to { height: 100%; } }
+
+  .song-info { line-height: 1.15; min-width: 0; }
+  .song-title {
+    font-family: var(--font-hand); font-size: 1.3rem; color: var(--tx);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px;
+  }
+  .song-status { font-size: .8rem; color: var(--soft); font-style: italic; }
+  .bar { height: 8px; border-radius: 4px; margin-top: 4px; background: rgba(128,128,128,.3); cursor: pointer; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--acc), var(--acc2)); }
+
+  #playlist {
+    width: min(350px, calc(100vw - 32px)); padding: 14px 10px 10px;
+    border-radius: 24px; transform-origin: bottom right;
+  }
+  #playlist.hidden { opacity: 0; visibility: hidden; transform: translateY(12px) scale(.96); pointer-events: none; }
+  .pl-head {
+    font-family: var(--font-display); font-style: italic; font-weight: 600;
+    font-size: 1.3rem; color: var(--tx); padding: 0 10px 8px;
+  }
+  #pl-list { list-style: none; }
+  .pl-row {
+    width: 100%; display: flex; align-items: center; gap: 12px; min-height: 48px;
+    padding: 9px 10px; border: 0; border-radius: 14px; text-align: left;
+    background: transparent; color: var(--tx); transition: background .25s ease;
+  }
+  .pl-row.on { background: rgba(255,255,255,.2); box-shadow: inset 3px 0 0 var(--acc); }
+  .pl-num {
+    width: 28px; height: 28px; flex-shrink: 0; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .85rem; color: #fff; background: linear-gradient(135deg, var(--acc), var(--acc2));
+  }
+  .pl-txt { flex: 1; min-width: 0; }
+  .pl-t { display: block; font-family: var(--font-hand); font-size: 1.35rem; line-height: 1.05; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pl-a { display: block; font-size: .85rem; color: var(--soft); font-style: italic; }
+  .pl-row .eq { height: 14px; visibility: hidden; }
+  .pl-row.on .eq { visibility: visible; }
+
+  @media (max-width: 480px) {
+    #music-player .eq { display: none; }
+    .song-title { max-width: 90px; }
+  }
+</style>
+</head>
+
+<body>
+
+<canvas id="bg" aria-hidden="true"></canvas>
+<canvas id="bgOld" aria-hidden="true"></canvas>
+<div id="veil" aria-hidden="true"></div>
+
+<nav id="themes" aria-label="Choose a theme"></nav>
+
+<!-- LETTER PAGE (FIRST AND ONLY PAGE) -->
+<main id="letter-screen" aria-label="Letter">
+  <article class="paper">
+    <h2>A Letter for You</h2>
+    <div class="divider" aria-hidden="true">♡</div>
+
+    <div class="letter-body">
+      <div class="placeholder">
+        <p>✎ HALLO PO</p>
+        <p>Hiii, Andengg! How are you? You aren't skipping meals, are you? I've been doing well still, though schoolwork keeps coming and coming. I haven't written you a letter yesterday since I've been finishing some tasks, and I'm sorry for that. I just want you to know that I've been missing you, and I wish you were by my side because you're my comfort. I just want to rest in your arms sometimes because schoolwork has been tough lately. I want to rant to you and tell you that life's been draining recently. I miss you, my rant buddy.</p>
+        <p>I hope that you're doing fine there, deng. I wish you the best in your studies. I've been praying for your safety, good health, and your family. Always go home early after your errands, and don't push yourself too much to avoid burnout, okay? Always take care on your way to school and back home. Don't use your phone while you're traveling (sorry for nagging :PP). Anyways, I miss you every day, and always know that I'm here if the world is against you. I love you, and I'm always your kakampi, okay? Please reach out if your heart feels heavy. I'm always here to listen to you. That's it for now. I'll write again soon!!</p>
+      </div>
+    </div>
+
+    <div class="signature">
+      <small>Always love,</small>
+      Tonton ♥♥♥
+    </div>
+  </article>
+</main>
+
+<!-- MUSIC PLAYER -->
+<div id="music-wrap">
+  <div id="playlist" class="hidden" role="region" aria-label="Playlist">
+    <div class="pl-head">Our playlist</div>
+    <ol id="pl-list"></ol>
+  </div>
+
+  <div id="music-player">
+    <button class="ctl" id="prev-btn" aria-label="Previous song" type="button">⏮</button>
+    <button id="play-btn" aria-label="Play music" type="button">▶</button>
+    <button class="ctl" id="next-btn" aria-label="Next song" type="button">⏭</button>
+    <div class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+    <div class="song-info">
+      <div class="song-title" id="song-title"></div>
+      <div class="song-status" id="song-status">tap ▶ to play</div>
+      <div class="bar" id="bar" aria-hidden="true"><i id="bar-fill"></i></div>
+    </div>
+    <button class="ctl" id="list-btn" aria-label="Show playlist" aria-expanded="false" type="button">☰</button>
+  </div>
+
+  <audio id="audio" preload="none" playsinline></audio>
+</div>
+
+<script>
+  /* THEMES */
+  const THEMES = {
+    day: {
+      label: "Day", dark: false,
+      sky: ["#2b7fc2", "#62b6dc", "#f6ecd4"], sun: [.8, .2, .055, "255,244,196"], rays: true,
+      mt: ["#9db9d6", "#6e9db2", "#3f7d5a"], haze: "#d7eaee",
+      trees: "pine", tc: ["#2f6b45", "#3f8b52", "#285a3c"],
+      cloud: "255,255,255", cloudA: .9,
+      fx: "dust", fc: ["255,244,200"], spark: "255,210,120",
+      acc: "#e0607e", acc2: "#f2a24f", tx: "#4a2f38", soft: "#856a72"
+    },
+    sunset: {
+      label: "Sunset", dark: true,
+      sky: ["#1f1342", "#8a2f6f", "#ff6f61", "#ffc27a"], sun: [.5, .6, .1, "255,226,168"], rays: true,
+      mt: ["#8d3f78", "#5a2b66", "#2b1642"], haze: "#ff8f6b",
+      trees: "pine", tc: ["#1d0f33", "#27143f"],
+      cloud: "255,150,130", cloudA: .55,
+      fx: "dust", fc: ["255,190,120", "255,150,170"], spark: "255,190,130",
+      acc: "#ff8a5c", acc2: "#ff5f9e", tx: "#fff3ec", soft: "#e8c4c8"
+    },
+    night: {
+      label: "Night", dark: true,
+      sky: ["#03050f", "#0c1840", "#26407c"], sun: [.76, .2, .045, "244,241,222"], stars: true, moon: true,
+      mt: ["#1c2b5a", "#121d42", "#0a1230"], haze: "#223a72",
+      trees: "pine", tc: ["#050918", "#080d20"],
+      cloud: "120,140,210", cloudA: .22,
+      fx: "firefly", fc: ["200,255,160", "170,220,255"], spark: "190,210",
+      acc: "#9db4ff", acc2: "#c79bff", tx: "#eef0ff", soft: "#aab4dc"
+    },
+    autumn: {
+      label: "Autumn", dark: false,
+      sky: ["#f9d9a8", "#f5ab72", "#e5784f"], sun: [.25, .25, .05, "255,240,205"], rays: false,
+      mt: ["#cf9174", "#a85a40", "#6c2e26"], haze: "#f0b98c",
+      trees: "round", tc: ["#c8341f", "#e8731f", "#f2a925", "#9b2a1c"],
+      cloud: "255,235,215", cloudA: .6,
+      fx: "leaf", fc: ["#c8341f", "#e8731f", "#f2a925", "#a8321e"], spark: "255,170,90",
+      acc: "#c8421f", acc2: "#e89226", tx: "#4a2218", soft: "#8a5a4a"
+    },
+    fall: {
+      label: "Fall", dark: false,
+      sky: ["#34452d", "#7f9150", "#ecd078"], sun: [.55, .3, .07, "255,244,176"], rays: true,
+      mt: ["#a4a96a", "#6f7d3f", "#3b4a25"], haze: "#e0d28a",
+      trees: "round", tc: ["#d9a21b", "#b97a14", "#8a5a12", "#6b7a2a"],
+      cloud: "255,250,220", cloudA: .5,
+      fx: "leaf", fc: ["#d9a21b", "#a86a14", "#7a8a2a", "#e8c55a"], spark: "255,230,130",
+      acc: "#b8741a", acc2: "#8d9a2a", tx: "#33280f", soft: "#78683a"
+    }
+  };
+
+  /* BACKGROUND CANVAS RENDERER */
+  (function () {
+    const cv = document.getElementById("bg"), ctx = cv.getContext("2d");
+    const root = document.documentElement, nav = document.getElementById("themes");
+    const DPR = Math.min(devicePixelRatio || 1, 1.5);
+    const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let W, H, T, name, sky, far, mid, near, cloudSprite, stars = [], parts = [], sparks = [];
+    let mx = 0, my = 0, sx = 0, sy = 0;
+
+    const seeded = s => () => { s |= 0; s = s + 0x6D2B79F5 | 0; let t = Math.imul(s ^ s >>> 15, 1 | s); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+    const noise = (u, s, f) => .5 * Math.sin(u * f[0] + s) + .3 * Math.sin(u * f[1] + s * 2.1) + .2 * Math.sin(u * f[2] + s * 3.7);
+    const mk = (w, h) => { const c = document.createElement("canvas"); c.width = w * DPR; c.height = h * DPR; const g = c.getContext("2d"); g.scale(DPR, DPR); return [c, g]; };
+    const glow = (g, x, y, r, rgb, a) => {
+      const gr = g.createRadialGradient(x, y, 0, x, y, r);
+      gr.addColorStop(0, "rgba(" + rgb + "," + a + ")"); gr.addColorStop(1, "rgba(" + rgb + ",0)");
+      g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2);
+    };
+
+    function ridge(g, w, h, col, base, amp, seed, f) {
+      const gr = g.createLinearGradient(0, h * (base - amp), 0, h);
+      gr.addColorStop(0, col); gr.addColorStop(1, T.haze);
+      g.fillStyle = gr; g.beginPath(); g.moveTo(0, h);
+      for (let x = 0; x <= w; x += 5) g.lineTo(x, h * (base + amp * noise(x / w, seed, f)));
+      g.lineTo(w, h); g.closePath(); g.fill();
+    }
+
+    function trees(g, w, h, base, amp, seed, f, size, gap) {
+      const R = seeded(seed * 9 + 1);
+      for (let x = -10; x < w + 10; x += gap * (.6 + R() * .8)) {
+        const y = h * (base + amp * noise(x / w, seed, f)) + 4, s = size * (.65 + R() * .7), c = T.tc[(R() * T.tc.length) | 0];
+        g.fillStyle = c;
+        if (T.trees === "pine") {
+          for (let k = 0; k < 3; k++) {
+            const bw = s * (.32 - k * .07), top = y - s * (.55 + k * .3), bot = y - s * k * .3;
+            g.beginPath(); g.moveTo(x, top - s * .22); g.lineTo(x + bw, bot); g.lineTo(x - bw, bot); g.closePath(); g.fill();
+          }
+        } else {
+          g.fillRect(x - s * .03, y - s * .4, s * .06, s * .4);
+          [[0, -.78, .3], [-.18, -.58, .24], [.18, -.58, .24], [0, -.55, .28]].forEach(b => {
+            g.fillStyle = T.tc[(R() * T.tc.length) | 0];
+            g.beginPath(); g.arc(x + b[0] * s, y + b[1] * s, b[2] * s, 0, 6.3); g.fill();
+          });
+        }
+      }
+    }
+
+    function build() {
+      W = innerWidth; H = innerHeight; cv.width = W * DPR; cv.height = H * DPR; ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      const LW = W + 140, R = seeded(5);
+      let g;
+
+      [sky, g] = mk(W, H);
+      const gr = g.createLinearGradient(0, 0, 0, H);
+      T.sky.forEach((c, i) => gr.addColorStop(i / (T.sky.length - 1), c));
+      g.fillStyle = gr; g.fillRect(0, 0, W, H);
+      const [sxp, syp, sr, rgb] = T.sun, cx = sxp * W, cy = syp * H, r = sr * Math.max(W, H * 1.3);
+      glow(g, cx, cy, r * 7, rgb, .5); glow(g, cx, cy, r * 3, rgb, .55);
+      if (T.rays) {
+        g.save(); g.translate(cx, cy);
+        for (let i = 0; i < 14; i++) {
+          g.rotate(.45); const l = Math.max(W, H) * 1.3;
+          const rg = g.createLinearGradient(0, 0, l, 0); rg.addColorStop(0, "rgba(" + rgb + ",.2)"); rg.addColorStop(1, "rgba(" + rgb + ",0)");
+          g.fillStyle = rg; g.beginPath(); g.moveTo(0, 0); g.lineTo(l, -l * .035); g.lineTo(l, l * .035); g.closePath(); g.fill();
+        }
+        g.restore();
+      }
+      g.fillStyle = "rgb(" + rgb + ")"; g.beginPath(); g.arc(cx, cy, r, 0, 6.3); g.fill();
+      if (T.moon) {
+        g.fillStyle = "rgba(60,70,110,.14)";
+        [[-.3, -.2, .22], [.25, .1, .3], [-.1, .35, .16], [.35, -.35, .12]].forEach(c => { g.beginPath(); g.arc(cx + c[0] * r, cy + c[1] * r, c[2] * r, 0, 6.3); g.fill(); });
+      }
+      stars = [];
+      if (T.stars) for (let i = 0; i < 160; i++) stars.push({ x: R() * W, y: R() * H * .65, r: .4 + R() * 1.3, p: R() * 6.3, s: .6 + R() * 1.6 });
+
+      [far, g] = mk(LW, H); ridge(g, LW, H, T.mt[0], .5, .1, 2, [5, 13, 31]);
+      [mid, g] = mk(LW, H); ridge(g, LW, H, T.mt[1], .65, .08, 5, [4, 11, 27]); trees(g, LW, H, .65, .08, 5, [4, 11, 27], H * .045, 14);
+      [near, g] = mk(LW, H); ridge(g, LW, H, T.mt[2], .84, .05, 9, [3, 9, 21]); trees(g, LW, H, .84, .05, 9, [3, 9, 21], H * .13, 38);
+
+      [cloudSprite, g] = mk(320, 120);
+      for (let i = 0; i < 12; i++) glow(g, 50 + R() * 220, 60 + (R() - .5) * 40, 28 + R() * 34, T.cloud, .5);
+
+      const n = T.fx === "leaf" ? 34 : T.fx === "firefly" ? 30 : 44;
+      parts = [];
+      for (let i = 0; i < n; i++) parts.push(spawn(true));
+    }
+
+    function spawn(init) {
+      const R = Math.random, c = T.fc[(R() * T.fc.length) | 0];
+      if (T.fx === "leaf") return { x: R() * (W + 100) - 50, y: init ? R() * H : -20, vy: .5 + R() * .9, vx: -.2 + R() * .5, rot: R() * 6.3, vr: (R() - .5) * .05, s: 5 + R() * 7, c, p: R() * 6.3 };
+      if (T.fx === "firefly") return { x: R() * W, y: H * (.35 + R() * .6), s: 1.5 + R() * 2.5, c, p: R() * 6.3, a: 20 + R() * 40 };
+      return { x: R() * W, y: init ? R() * H : H + 10, vy: -(.15 + R() * .4), s: 1.5 + R() * 3, c, p: R() * 6.3 };
+    }
+
+    function frame(ms) {
+      const t = still ? 0 : ms;
+      sx += (mx - sx) * .05; sy += (my - sy) * .05;
+      ctx.drawImage(sky, 0, 0, W, H);
+      if (stars.length) stars.forEach(s => { ctx.globalAlpha = .45 + .55 * Math.sin(t / 700 * s.s + s.p) ** 2; ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(s.x - sx * 6, s.y - sy * 4, s.r, 0, 6.3); ctx.fill(); });
+      ctx.globalAlpha = T.cloudA;
+      for (let i = 0; i < 6; i++) {
+        const sp = 6 + i * 2.5, x = ((i * 260 + t / 1000 * sp) % (W + 400)) - 320 - sx * (8 + i * 2);
+        ctx.drawImage(cloudSprite, x, H * (.08 + (i % 3) * .1 + (i > 2 ? .05 : 0)), 320 * (1 + i * .12), 120 * (1 + i * .12));
+      }
+      ctx.globalAlpha = 1;
+      ctx.drawImage(far,  -70 - sx * 14, -sy * 6,  W + 140, H);
+      ctx.drawImage(mid,  -70 - sx * 30, -sy * 12, W + 140, H);
+
+      parts.forEach((p, i) => {
+        if (T.fx === "leaf") {
+          p.y += p.vy * (still ? 0 : 1); p.x += (p.vx + Math.sin(t / 900 + p.p) * .6) * (still ? 0 : 1); p.rot += p.vr * (still ? 0 : 1);
+          if (p.y > H + 20) parts[i] = spawn(false);
+          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.scale(1, .55 + .45 * Math.cos(t / 500 + p.p)); ctx.fillStyle = p.c;
+          ctx.beginPath(); ctx.moveTo(0, -p.s); ctx.quadraticCurveTo(p.s, 0, 0, p.s); ctx.quadraticCurveTo(-p.s, 0, 0, -p.s); ctx.fill(); ctx.restore();
+        } else if (T.fx === "firefly") {
+          const x = p.x + Math.sin(t / 2200 + p.p) * p.a, y = p.y + Math.cos(t / 1700 + p.p) * p.a * .6;
+          glow(ctx, x, y, p.s * 7, p.c, .35 + .65 * Math.sin(t / 600 + p.p) ** 2);
+        } else {
+          p.y += p.vy * (still ? 0 : 1); if (p.y < -10) parts[i] = spawn(false);
+          glow(ctx, p.x + Math.sin(t / 1500 + p.p) * 14, p.y, p.s * 4, p.c, .6);
+        }
+      });
+
+      ctx.drawImage(near, -70 - sx * 52, -sy * 20, W + 140, H);
+
+      for (let i = sparks.length - 1; i >= 0; i--) {
+        const s = sparks[i]; s.x += s.vx; s.y += s.vy; s.l -= .025;
+        if (s.l <= 0) { sparks.splice(i, 1); continue; }
+        glow(ctx, s.x, s.y, 10 * s.l + 2, T.spark, s.l * .8);
+      }
+      requestAnimationFrame(frame);
+    }
+
+    function apply(key, instant) {
+      name = key; T = THEMES[key];
+      const d = T.dark, s = root.style;
+      s.setProperty("--acc", T.acc); s.setProperty("--acc2", T.acc2);
+      s.setProperty("--vig", d ? "rgba(0,0,14,.5)" : "rgba(70,30,0,.3)"); s.setProperty("--tx", T.tx); s.setProperty("--soft", T.soft);
+      s.setProperty("--glass", d ? "rgba(22,18,48,.5)" : "rgba(255,250,242,.55)");
+      s.setProperty("--glass-b", d ? "rgba(255,255,255,.16)" : "rgba(255,255,255,.6)");
+      s.setProperty("--p1", d ? "rgba(26,22,58,.82)" : "#fffaf2");
+      s.setProperty("--p2", d ? "rgba(18,15,44,.88)" : "#fbf1e2");
+      s.setProperty("--pl", d ? "rgba(255,255,255,.07)" : "rgba(160,110,90,.14)");
+      document.querySelectorAll(".tbtn").forEach(b => b.setAttribute("aria-pressed", b.dataset.k === key));
+      try { localStorage.setItem("letter-theme", key); } catch (e) {}
+      if (instant) { build(); return; }
+      const o = document.getElementById("bgOld");
+      o.width = cv.width; o.height = cv.height; o.getContext("2d").drawImage(cv, 0, 0);
+      o.style.transition = "none"; o.style.opacity = 1;
+      build();
+      requestAnimationFrame(() => requestAnimationFrame(() => { o.style.transition = "opacity 1.2s ease"; o.style.opacity = 0; }));
+    }
+
+    Object.keys(THEMES).forEach(k => {
+      const th = THEMES[k], b = document.createElement("button");
+      b.className = "tbtn"; b.dataset.k = k; b.type = "button";
+      b.innerHTML = '<span class="sw" style="background:linear-gradient(160deg,' + th.sky.join(",") + ')"></span><span>' + th.label + "</span>";
+      b.addEventListener("click", () => k !== name && apply(k));
+      nav.appendChild(b);
+    });
+
+    addEventListener("pointermove", e => {
+      if (still) return;
+      mx = e.clientX / innerWidth - .5; my = e.clientY / innerHeight - .5;
+      if (Math.random() < .5) sparks.push({ x: e.clientX, y: e.clientY, vx: (Math.random() - .5) * .6, vy: .3 + Math.random() * .6, l: 1 });
+    });
+    let rt; addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(build, 200); });
+
+    let saved = "sunset"; try { saved = localStorage.getItem("letter-theme") || "sunset"; } catch (e) {}
+    apply(THEMES[saved] ? saved : "sunset", true);
+    requestAnimationFrame(frame);
+  })();
+
+  /* MUSIC PLAYER LOGIC */
+  const SONGS = [
+    { title: "13",   artist: "LANY", src: "songs/song1.mp3" },
+    { title: "Beautiful",   artist: "Bazzi", src: "songs/song2.mp3" },
+    { title: "Sparks", artist: "Coldplay", src: "songs/song3.mp3" }
+  ];
+
+  const audio    = document.getElementById("audio");
+  const wrap     = document.getElementById("music-wrap");
+  const playBtn  = document.getElementById("play-btn");
+  const titleEl  = document.getElementById("song-title");
+  const statusEl = document.getElementById("song-status");
+  const listBtn  = document.getElementById("list-btn");
+  const panel    = document.getElementById("playlist");
+  const listEl   = document.getElementById("pl-list");
+  const bar      = document.getElementById("bar");
+  const fill     = document.getElementById("bar-fill");
+  let cur = 0;
+
+  const rows = SONGS.map((s, k) => {
+    const li = document.createElement("li"), b = document.createElement("button");
+    b.type = "button"; b.className = "pl-row";
+    b.innerHTML = '<span class="pl-num">' + (k + 1) + '</span><span class="pl-txt"><span class="pl-t"></span><span class="pl-a"></span></span><span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>';
+    b.querySelector(".pl-t").textContent = s.title;
+    b.querySelector(".pl-a").textContent = s.artist;
+    b.addEventListener("click", () => {
+      if (k === cur && audio.src) toggle(); else load(k, true);
+    });
+    li.appendChild(b); listEl.appendChild(li); return b;
+  });
+
+  function setPlayingUI(isPlaying) {
+    wrap.classList.toggle("playing", isPlaying);
+    playBtn.textContent = isPlaying ? "❚❚" : "▶";
+    playBtn.setAttribute("aria-label", isPlaying ? "Pause music" : "Play music");
+    statusEl.textContent = isPlaying ? "now playing" : "tap ▶ to play";
+  }
+
+  function tryPlay() {
+    if (!audio.src) {
+      load(cur, false);
+    }
+    try {
+      const p = audio.play();
+      if (p !== undefined) {
+        p.then(() => setPlayingUI(true)).catch(() => {
+          statusEl.textContent = "tap ▶ to play";
+          setPlayingUI(false);
+        });
+      }
+    } catch (err) {
+      statusEl.textContent = "tap ▶ to play";
+      setPlayingUI(false);
+    }
+  }
+
+  function load(i, play) {
+    cur = (i + SONGS.length) % SONGS.length;
+    const s = SONGS[cur];
+    audio.src = s.src;
+    titleEl.textContent = s.title + " — " + s.artist;
+    rows.forEach((r, k) => r.classList.toggle("on", k === cur));
+    fill.style.width = "0%";
+    if (play) tryPlay(); else setPlayingUI(false);
+  }
+
+  function toggle() {
+    if (!audio.src) { load(cur, true); return; }
+    if (audio.paused) tryPlay(); else { audio.pause(); setPlayingUI(false); }
+  }
+
+  playBtn.addEventListener("click", toggle);
+  document.getElementById("next-btn").addEventListener("click", () => load(cur + 1, true));
+  document.getElementById("prev-btn").addEventListener("click", () => {
+    if (audio.currentTime > 3) audio.currentTime = 0; else load(cur - 1, true);
+  });
+  audio.addEventListener("ended", () => load(cur + 1, true));
+  audio.addEventListener("error", () => { statusEl.textContent = "tap ▶ to play"; wrap.classList.remove("playing"); playBtn.textContent = "▶"; });
+  audio.addEventListener("timeupdate", () => { if (audio.duration) fill.style.width = (audio.currentTime / audio.duration * 100) + "%"; });
+  bar.addEventListener("click", e => {
+    if (!audio.duration) return;
+    const r = bar.getBoundingClientRect(); audio.currentTime = (e.clientX - r.left) / r.width * audio.duration;
+  });
+
+  function showList(open) {
+    panel.classList.toggle("hidden", !open);
+    listBtn.setAttribute("aria-expanded", open);
+    listBtn.setAttribute("aria-label", open ? "Hide playlist" : "Show playlist");
+  }
+  listBtn.addEventListener("click", (e) => { e.stopPropagation(); showList(panel.classList.contains("hidden")); });
+  addEventListener("keydown", e => { if (e.key === "Escape") showList(false); });
+  addEventListener("click", e => {
+    if (!panel.contains(e.target) && !listBtn.contains(e.target)) showList(false);
+  });
+
+  load(0, false);
+</script>
+</body>
+</html>
